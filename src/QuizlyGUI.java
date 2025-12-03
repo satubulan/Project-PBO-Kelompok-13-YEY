@@ -1,37 +1,39 @@
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.awt.event.*;
+import java.io.File;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sound.sampled.*;
-import java.io.File;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
 
 public class QuizlyGUI extends JFrame {
     
-    // COLOR PALETTE & FONTS
-    final Color ACCENT_BLUE   = new Color(33, 150, 243); 
-    final Color DARK_BG       = new Color(30, 30, 30);   
-    final Color INPUT_BG      = new Color(60, 60, 60);
-    final Color TEXT_WHITE    = new Color(240, 240, 240);
+    // --- PALET WARNA (DARK GRADIENT THEME) ---
+    final Color COL_GRADIENT_START = Color.decode("#141E30"); 
+    final Color COL_GRADIENT_END   = Color.decode("#243B55"); 
     
-    final Color LIGHT_BG      = new Color(236, 240, 241);
-    final Color PRIMARY_COLOR = new Color(44, 62, 80);
-    final Color DANGER_COLOR  = new Color(231, 76, 60);
+    final Color COL_BTN_START      = Color.decode("#4e54c8"); // Ungu Modern
+    final Color COL_BTN_END        = Color.decode("#8f94fb"); // Biru Muda
+    
+    final Color COL_DANGER         = Color.decode("#e74c3c"); 
+    final Color COL_SUCCESS        = Color.decode("#2ecc71"); 
+    final Color COL_TEXT_DARK      = Color.decode("#2c3e50"); 
+    final Color COL_FIELD_BG       = Color.decode("#f1f2f6");
+    final Color COL_TABLE_HEAD     = Color.decode("#4e54c8");
 
-    final Font FONT_TITLE_BIG = new Font("Segoe UI", Font.BOLD, 32);
-    final Font FONT_TITLE     = new Font("Segoe UI", Font.BOLD, 24);
+    // --- FONTS ---
+    final Font FONT_TITLE_BIG = new Font("Segoe UI", Font.BOLD, 28);
+    final Font FONT_TITLE     = new Font("Segoe UI", Font.BOLD, 22);
     final Font FONT_NORMAL    = new Font("Segoe UI", Font.PLAIN, 14);
     final Font FONT_BOLD      = new Font("Segoe UI", Font.BOLD, 14);
 
     // Panel Management
     private JPanel mainPanel;
     private CardLayout cardLayout;
-    User currentUser; // Package-private agar bisa diakses oleh LeaderboardPanel
+    User currentUser; 
 
     public QuizlyGUI() {
         setTitle("Quizly - Interactive Quiz App");
@@ -52,11 +54,10 @@ public class QuizlyGUI extends JFrame {
         mainPanel.add(new RegisterPanel(), "REGISTER");
         
         add(mainPanel);
-        cardLayout.show(mainPanel, "LOGIN");
+        setVisible(true); 
     }
 
     // --- HELPER METHODS ---
-    
     public void switchCard(String cardName) {
         cardLayout.show(mainPanel, cardName);
     }
@@ -72,252 +73,234 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    private void styleButtonDark(JButton btn) {
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btn.setBackground(ACCENT_BLUE);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(0, 45)); 
-    }
-
-    private void styleTextFieldDark(JTextField field) {
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        field.setBackground(INPUT_BG);
-        field.setForeground(TEXT_WHITE);
-        field.setCaretColor(TEXT_WHITE);
-        field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(100, 100, 100), 1), 
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-    }
-
-    private ImageIcon loadImage(String filename, int width, int height) {
-        try {
-            String path = "assets/" + filename;
-            java.io.File f = new java.io.File(path);
-            if (!f.exists()) { path = "../assets/" + filename; f = new java.io.File(path); }
-
-            if (f.exists()) {
-                ImageIcon icon = new ImageIcon(path);
-                Image img = icon.getImage();
-                Image newImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-                return new ImageIcon(newImg);
-            }
-        } catch (Exception e) {}
-        return null;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
-            new QuizlyGUI().setVisible(true);
+    // --- HELPER: STYLE TABEL MODERN (WHITE/LIGHT) ---
+    private void styleModernTable(JTable table) {
+        table.setRowHeight(45);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setSelectionBackground(new Color(232, 240, 254)); 
+        table.setSelectionForeground(Color.BLACK);
+        table.setBackground(Color.WHITE);
+        table.setForeground(COL_TEXT_DARK);
+        
+        JTableHeader header = table.getTableHeader();
+        header.setDefaultRenderer((t, value, isSelected, hasFocus, row, col) -> {
+            JLabel l = new JLabel(value.toString());
+            l.setOpaque(true); l.setBackground(COL_TABLE_HEAD); l.setForeground(Color.WHITE);
+            l.setFont(new Font("Segoe UI", Font.BOLD, 14)); l.setHorizontalAlignment(JLabel.CENTER);
+            l.setBorder(new EmptyBorder(12, 10, 12, 10)); return l;
         });
+        header.setPreferredSize(new Dimension(0, 50));
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) { 
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 249, 250)); 
+                    c.setForeground(COL_TEXT_DARK);
+                }
+                setBorder(new EmptyBorder(0, 10, 0, 10)); setHorizontalAlignment(JLabel.CENTER); return c;
+            }
+        };
+        for (int i = 0; i < table.getColumnCount(); i++) table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
     }
 
+    // ==================================================================================
+    // CUSTOM COMPONENT MODERN
+    // ==================================================================================
+    
+    class GradientPanel extends JPanel {
+        @Override protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            GradientPaint gp = new GradientPaint(0, 0, COL_GRADIENT_START, getWidth(), getHeight(), COL_GRADIENT_END);
+            g2d.setPaint(gp); g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+    }
+
+    class RoundedGradientButton extends JButton {
+        Color c1, c2; int radius = 30;
+        public RoundedGradientButton(String text, Color start, Color end) {
+            super(text); this.c1 = start; this.c2 = end;
+            setContentAreaFilled(false); setFocusPainted(false); setBorderPainted(false);
+            setForeground(Color.WHITE); setFont(FONT_BOLD); setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+        public RoundedGradientButton(String text) { this(text, COL_BTN_START, COL_BTN_END); }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            GradientPaint gp = new GradientPaint(0, 0, c1, getWidth(), 0, c2);
+            g2d.setPaint(gp); g2d.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+            g2d.dispose(); super.paintComponent(g);
+        }
+    }
+
+    class RoundedTextField extends JTextField {
+        public RoundedTextField(int cols) { super(cols); setOpaque(false); setFont(FONT_NORMAL); setBorder(new EmptyBorder(10, 15, 10, 15)); }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create(); g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(COL_FIELD_BG); g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, 20, 20); super.paintComponent(g2);
+        }
+        @Override protected void paintBorder(Graphics g) {}
+    }
+    
+    class RoundedPasswordField extends JPasswordField {
+        public RoundedPasswordField(int cols) { super(cols); setOpaque(false); setFont(FONT_NORMAL); setBorder(new EmptyBorder(10, 15, 10, 15)); }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create(); g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(COL_FIELD_BG); g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, 20, 20); super.paintComponent(g2);
+        }
+        @Override protected void paintBorder(Graphics g) {}
+    }
+
+    private JPanel createWhiteCard() {
+        JPanel card = new JPanel(new GridBagLayout()); card.setBackground(Color.WHITE);
+        card.setBorder(new CompoundBorder(new LineBorder(new Color(0,0,0,30), 1, true), new EmptyBorder(40, 50, 40, 50)));
+        return card;
+    }
+
+    // ==================================================================================
     // 1. LOGIN PANEL
-    class LoginPanel extends JPanel {
-        JTextField userField = new JTextField();
-        JPasswordField passField = new JPasswordField();
+    // ==================================================================================
+    class LoginPanel extends GradientPanel {
+        JTextField userField; JPasswordField passField;
 
         public LoginPanel() {
-            setLayout(new GridBagLayout());
-            setBackground(DARK_BG); 
-            
-            JPanel formPanel = new JPanel(new GridBagLayout());
-            formPanel.setBackground(DARK_BG);
-            
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(8, 0, 8, 0); 
-            gbc.gridx = 0; gbc.anchor = GridBagConstraints.CENTER;
+            setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
+            GridBagConstraints gbc = new GridBagConstraints(); gbc.insets = new Insets(10, 0, 10, 0); gbc.gridx = 0; gbc.gridy = 0; gbc.fill = GridBagConstraints.HORIZONTAL;
 
-            JLabel imgLabel = new JLabel();
-            ImageIcon icon = loadImage("img1.jpg", 120, 120);
-            if (icon != null) imgLabel.setIcon(icon);
+            JLabel title = new JLabel("Welcome Back!", SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); card.add(title, gbc);
+            gbc.gridy++; JLabel sub = new JLabel("Login to Quizly App", SwingConstants.CENTER); sub.setFont(FONT_NORMAL); sub.setForeground(Color.GRAY); card.add(sub, gbc);
 
-            JLabel title = new JLabel("Welcome to Quizly");
-            title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE);
-            
-            JLabel uLabel = new JLabel("Username"); uLabel.setFont(FONT_BOLD); uLabel.setForeground(TEXT_WHITE);
-            JPanel uLabelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            uLabelPanel.setBackground(DARK_BG); uLabelPanel.setPreferredSize(new Dimension(350, 20)); uLabelPanel.add(uLabel);
+            gbc.gridy++; gbc.insets = new Insets(20, 0, 5, 0); JLabel lblU = new JLabel("Username"); lblU.setFont(FONT_BOLD); lblU.setForeground(COL_TEXT_DARK); card.add(lblU, gbc);
+            gbc.gridy++; gbc.insets = new Insets(0, 0, 10, 0); userField = new RoundedTextField(20); userField.setPreferredSize(new Dimension(300, 45)); card.add(userField, gbc);
 
-            JLabel pLabel = new JLabel("Password"); pLabel.setFont(FONT_BOLD); pLabel.setForeground(TEXT_WHITE);
-            JPanel pLabelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            pLabelPanel.setBackground(DARK_BG); pLabelPanel.setPreferredSize(new Dimension(350, 20)); pLabelPanel.add(pLabel);
+            gbc.gridy++; gbc.insets = new Insets(5, 0, 5, 0); JLabel lblP = new JLabel("Password"); lblP.setFont(FONT_BOLD); lblP.setForeground(COL_TEXT_DARK); card.add(lblP, gbc);
+            gbc.gridy++; gbc.insets = new Insets(0, 0, 25, 0); passField = new RoundedPasswordField(20); passField.setPreferredSize(new Dimension(300, 45)); card.add(passField, gbc);
 
-            Dimension fieldSize = new Dimension(350, 40);
-            userField.setPreferredSize(fieldSize); styleTextFieldDark(userField);
-            passField.setPreferredSize(fieldSize); styleTextFieldDark(passField);
+            gbc.gridy++; RoundedGradientButton loginBtn = new RoundedGradientButton("LOGIN"); loginBtn.setPreferredSize(new Dimension(300, 45));
+            loginBtn.addActionListener(e -> handleLogin()); card.add(loginBtn, gbc);
 
-            JButton loginBtn = new JButton("Login"); styleButtonDark(loginBtn); loginBtn.setPreferredSize(fieldSize);
-            JButton regBtn = new JButton("Register"); styleButtonDark(regBtn); regBtn.setPreferredSize(fieldSize);
+            gbc.gridy++; gbc.insets = new Insets(15, 0, 0, 0);
+            JLabel regLink = new JLabel("<html>No account? <font color='#4e54c8'><b>Register here</b></font></html>", SwingConstants.CENTER);
+            regLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            regLink.addMouseListener(new MouseAdapter() { public void mouseClicked(MouseEvent e) { switchCard("REGISTER"); } });
+            card.add(regLink, gbc);
+            add(card);
+        }
 
-            gbc.insets = new Insets(0, 0, 10, 0); formPanel.add(imgLabel, gbc);
-            gbc.insets = new Insets(0, 0, 30, 0); formPanel.add(title, gbc);
-            gbc.insets = new Insets(5, 0, 5, 0);
-            formPanel.add(uLabelPanel, gbc); formPanel.add(userField, gbc);
-            formPanel.add(pLabelPanel, gbc); formPanel.add(passField, gbc);
-            gbc.insets = new Insets(25, 0, 10, 0); formPanel.add(loginBtn, gbc);
-            gbc.insets = new Insets(0, 0, 0, 0); formPanel.add(regBtn, gbc);
-
-            add(formPanel);
-
-            loginBtn.addActionListener(e -> {
-                User user = User.login(userField.getText(), new String(passField.getPassword()));
-                if (user != null) {
-                    setUserSession(user);
-                    userField.setText(""); passField.setText("");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Invalid Username/Password", "Login Failed", JOptionPane.ERROR_MESSAGE);
-                }
-            });
-            regBtn.addActionListener(e -> switchCard("REGISTER"));
+        private void handleLogin() {
+            User user = User.login(userField.getText(), new String(passField.getPassword()));
+            if (user != null) { setUserSession(user); userField.setText(""); passField.setText(""); } 
+            else { JOptionPane.showMessageDialog(this, "Invalid Username/Password"); }
         }
     }
 
+    // ==================================================================================
     // 2. REGISTER PANEL
-    class RegisterPanel extends JPanel {
-        JTextField userField = new JTextField();
-        JPasswordField passField = new JPasswordField();
-        JComboBox<String> roleBox = new JComboBox<>(new String[]{"STUDENT", "TEACHER"});
+    // ==================================================================================
+    class RegisterPanel extends GradientPanel {
+        JTextField userField; JPasswordField passField; JComboBox<String> roleBox;
 
         public RegisterPanel() {
-            setLayout(new GridBagLayout());
-            setBackground(DARK_BG);
+            setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
+            GridBagConstraints gbc = new GridBagConstraints(); gbc.insets = new Insets(10, 0, 10, 0); gbc.gridx = 0; gbc.gridy = 0; gbc.fill = GridBagConstraints.HORIZONTAL;
 
-            JPanel formPanel = new JPanel(new GridBagLayout());
-            formPanel.setBackground(DARK_BG);
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(5, 0, 5, 0);
-            gbc.gridx = 0; gbc.anchor = GridBagConstraints.CENTER;
+            JLabel title = new JLabel("Create Account", SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); card.add(title, gbc);
+            gbc.gridy++; gbc.insets = new Insets(20, 0, 5, 0); card.add(new JLabel("Username"), gbc);
+            gbc.gridy++; gbc.insets = new Insets(0, 0, 10, 0); userField = new RoundedTextField(20); userField.setPreferredSize(new Dimension(300, 45)); card.add(userField, gbc);
+            gbc.gridy++; gbc.insets = new Insets(5, 0, 5, 0); card.add(new JLabel("Password"), gbc);
+            gbc.gridy++; gbc.insets = new Insets(0, 0, 10, 0); passField = new RoundedPasswordField(20); passField.setPreferredSize(new Dimension(300, 45)); card.add(passField, gbc);
+            gbc.gridy++; gbc.insets = new Insets(5, 0, 5, 0); card.add(new JLabel("Role"), gbc);
+            gbc.gridy++; gbc.insets = new Insets(0, 0, 25, 0);
+            roleBox = new JComboBox<>(new String[]{"STUDENT", "TEACHER"}); roleBox.setPreferredSize(new Dimension(300, 40)); roleBox.setBackground(Color.WHITE);
+            card.add(roleBox, gbc);
 
-            JLabel title = new JLabel("Create Account");
-            title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE);
+            gbc.gridy++; RoundedGradientButton regBtn = new RoundedGradientButton("REGISTER"); regBtn.setPreferredSize(new Dimension(300, 45));
+            regBtn.addActionListener(e -> handleRegister()); card.add(regBtn, gbc);
 
-            JLabel uLabel = new JLabel("Username"); uLabel.setFont(FONT_BOLD); uLabel.setForeground(TEXT_WHITE);
-            JPanel p1 = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0)); p1.setBackground(DARK_BG); p1.setPreferredSize(new Dimension(350,20)); p1.add(uLabel);
+            gbc.gridy++; gbc.insets = new Insets(15, 0, 0, 0);
+            JLabel loginLink = new JLabel("<html>Have account? <font color='#4e54c8'><b>Login here</b></font></html>", SwingConstants.CENTER);
+            loginLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            loginLink.addMouseListener(new MouseAdapter() { public void mouseClicked(MouseEvent e) { switchCard("LOGIN"); } });
+            card.add(loginLink, gbc);
+            add(card);
+        }
 
-            JLabel pLabel = new JLabel("Password"); pLabel.setFont(FONT_BOLD); pLabel.setForeground(TEXT_WHITE);
-            JPanel p2 = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0)); p2.setBackground(DARK_BG); p2.setPreferredSize(new Dimension(350,20)); p2.add(pLabel);
-
-            JLabel rLabel = new JLabel("Role"); rLabel.setFont(FONT_BOLD); rLabel.setForeground(TEXT_WHITE);
-            JPanel p3 = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0)); p3.setBackground(DARK_BG); p3.setPreferredSize(new Dimension(350,20)); p3.add(rLabel);
-
-            Dimension dim = new Dimension(350, 40);
-            userField.setPreferredSize(dim); styleTextFieldDark(userField);
-            passField.setPreferredSize(dim); styleTextFieldDark(passField);
-            
-            roleBox.setPreferredSize(dim);
-            roleBox.setBackground(INPUT_BG); roleBox.setForeground(Color.BLACK);
-            roleBox.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-
-            JButton regBtn = new JButton("Register"); styleButtonDark(regBtn); regBtn.setPreferredSize(dim);
-            JButton backBtn = new JButton("Back"); styleButtonDark(backBtn); backBtn.setPreferredSize(dim); backBtn.setBackground(new Color(80, 80, 80));
-
-            gbc.insets = new Insets(0,0,30,0); formPanel.add(title, gbc);
-            gbc.insets = new Insets(5,0,5,0);
-            formPanel.add(p1, gbc); formPanel.add(userField, gbc);
-            formPanel.add(p2, gbc); formPanel.add(passField, gbc);
-            formPanel.add(p3, gbc); formPanel.add(roleBox, gbc);
-            gbc.insets = new Insets(25,0,5,0); formPanel.add(regBtn, gbc);
-            gbc.insets = new Insets(5,0,5,0); formPanel.add(backBtn, gbc);
-
-            add(formPanel);
-
-            backBtn.addActionListener(e -> switchCard("LOGIN"));
-            regBtn.addActionListener(e -> {
-                if(User.register(userField.getText(), new String(passField.getPassword()), (String) roleBox.getSelectedItem())) {
-                    JOptionPane.showMessageDialog(this, "Registration Successful! Please Login.");
-                    switchCard("LOGIN");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Username already exists.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            });
+        private void handleRegister() {
+            if(User.register(userField.getText(), new String(passField.getPassword()), (String) roleBox.getSelectedItem())) {
+                JOptionPane.showMessageDialog(this, "Registration Successful!"); switchCard("LOGIN");
+            } else { JOptionPane.showMessageDialog(this, "Username exists!"); }
         }
     }
 
+    // ==================================================================================
     // 3. TEACHER DASHBOARD
-    class TeacherDashboard extends JPanel {
+    // ==================================================================================
+    class TeacherDashboard extends GradientPanel {
         public TeacherDashboard(Teacher teacher) {
-            setLayout(new GridBagLayout());
-            setBackground(DARK_BG);
+            setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
+            GridBagConstraints gbc = new GridBagConstraints(); gbc.insets = new Insets(15, 0, 15, 0); gbc.gridx = 0; gbc.fill = GridBagConstraints.HORIZONTAL;
 
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(15, 0, 15, 0); gbc.gridx = 0; gbc.anchor = GridBagConstraints.CENTER;
+            JLabel title = new JLabel("Teacher Dashboard", SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK);
+            JLabel subtitle = new JLabel("Welcome, " + teacher.getUsername(), SwingConstants.CENTER); subtitle.setFont(FONT_NORMAL); subtitle.setForeground(Color.GRAY);
 
-            JLabel title = new JLabel("Teacher Dashboard");
-            title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE);
+            Dimension btnSize = new Dimension(350, 50);
+            RoundedGradientButton createBtn = new RoundedGradientButton("Create New Quiz"); createBtn.setPreferredSize(btnSize);
+            RoundedGradientButton viewBtn = new RoundedGradientButton("My Quizzes & Leaderboard", COL_SUCCESS, COL_SUCCESS.darker()); viewBtn.setPreferredSize(btnSize);
+            RoundedGradientButton logoutBtn = new RoundedGradientButton("Logout", COL_DANGER, COL_DANGER.darker()); logoutBtn.setPreferredSize(btnSize);
 
-            JLabel subtitle = new JLabel("Welcome, " + teacher.getUsername());
-            subtitle.setFont(FONT_NORMAL); subtitle.setForeground(TEXT_WHITE);
+            gbc.gridy = 0; card.add(title, gbc);
+            gbc.gridy = 1; gbc.insets = new Insets(0, 0, 30, 0); card.add(subtitle, gbc);
+            gbc.gridy = 2; gbc.insets = new Insets(10, 0, 10, 0); card.add(createBtn, gbc);
+            gbc.gridy = 3; card.add(viewBtn, gbc);
+            gbc.gridy = 4; gbc.insets = new Insets(30, 0, 0, 0); card.add(logoutBtn, gbc);
 
-            Dimension btnSize = new Dimension(350, 55);
-            JButton createBtn = new JButton("Create New Quiz");
-            styleButtonDark(createBtn); createBtn.setBackground(ACCENT_BLUE); createBtn.setPreferredSize(btnSize);
-            
-            JButton viewBtn = new JButton("My Quizzes & Leaderboard");
-            styleButtonDark(viewBtn); viewBtn.setBackground(new Color(46, 204, 113)); viewBtn.setPreferredSize(btnSize);
-
-            JButton logoutBtn = new JButton("Logout");
-            styleButtonDark(logoutBtn); logoutBtn.setBackground(DANGER_COLOR); logoutBtn.setPreferredSize(new Dimension(350, 45));
-
-            gbc.gridy = 0; add(title, gbc);
-            gbc.gridy = 1; gbc.insets = new Insets(0, 0, 40, 0); add(subtitle, gbc);
-            gbc.gridy = 2; gbc.insets = new Insets(10, 0, 10, 0); add(createBtn, gbc);
-            gbc.gridy = 3; add(viewBtn, gbc);
-            gbc.gridy = 4; gbc.insets = new Insets(40, 0, 0, 0); add(logoutBtn, gbc);
-
+            add(card);
             logoutBtn.addActionListener(e -> switchCard("LOGIN"));
             createBtn.addActionListener(e -> { mainPanel.add(new CreateQuizPanel(teacher), "CREATE"); switchCard("CREATE"); });
             viewBtn.addActionListener(e -> { mainPanel.add(new ViewQuizPanel(teacher), "VIEW_QUIZ"); switchCard("VIEW_QUIZ"); });
         }
     }
 
+    // ==================================================================================
     // 4. STUDENT DASHBOARD
-    class StudentDashboard extends JPanel {
+    // ==================================================================================
+    class StudentDashboard extends GradientPanel {
         public StudentDashboard(Student student) {
-            setLayout(new GridBagLayout());
-            setBackground(DARK_BG);
+            setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
+            GridBagConstraints gbc = new GridBagConstraints(); gbc.gridx = 0; gbc.fill = GridBagConstraints.HORIZONTAL;
 
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.gridx = 0; gbc.anchor = GridBagConstraints.CENTER;
+            JLabel title = new JLabel("Student Dashboard", SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK);
+            JLabel subtitle = new JLabel("Logged in as: " + student.getUsername(), SwingConstants.CENTER); subtitle.setFont(FONT_NORMAL); subtitle.setForeground(Color.GRAY);
 
-            JLabel title = new JLabel("Student Dashboard");
-            title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE);
+            RoundedTextField keyField = new RoundedTextField(20); keyField.setPreferredSize(new Dimension(350, 50));
+            keyField.setHorizontalAlignment(JTextField.CENTER); keyField.setText("ENTER QUIZ KEY HERE"); keyField.setForeground(Color.GRAY);
+            keyField.addFocusListener(new FocusAdapter() {
+                public void focusGained(FocusEvent e) { if(keyField.getText().equals("ENTER QUIZ KEY HERE")){keyField.setText(""); keyField.setForeground(Color.BLACK);} }
+                public void focusLost(FocusEvent e) { if(keyField.getText().isEmpty()){keyField.setText("ENTER QUIZ KEY HERE"); keyField.setForeground(Color.GRAY);} }
+            });
 
-            JLabel subtitle = new JLabel("Logged in as: " + student.getUsername());
-            subtitle.setFont(FONT_NORMAL); subtitle.setForeground(TEXT_WHITE);
+            RoundedGradientButton joinBtn = new RoundedGradientButton("Start Quiz"); joinBtn.setPreferredSize(new Dimension(350, 50));
+            RoundedGradientButton historyBtn = new RoundedGradientButton("View My Grades", new Color(230, 126, 34), new Color(211, 84, 0)); historyBtn.setPreferredSize(new Dimension(350, 50));
+            RoundedGradientButton logoutBtn = new RoundedGradientButton("Logout", COL_DANGER, COL_DANGER.darker()); logoutBtn.setPreferredSize(new Dimension(350, 50));
 
-            JTextField keyField = new JTextField();
-            keyField.setPreferredSize(new Dimension(350, 45));
-            keyField.setHorizontalAlignment(JTextField.CENTER);
-            styleTextFieldDark(keyField);
-            keyField.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(ACCENT_BLUE), "Enter Quiz Key", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.TOP, new Font("Segoe UI", Font.PLAIN, 12), Color.GRAY));
+            gbc.gridy = 0; gbc.insets = new Insets(10, 0, 5, 0); card.add(title, gbc);
+            gbc.gridy = 1; gbc.insets = new Insets(0, 0, 30, 0); card.add(subtitle, gbc);
+            gbc.gridy = 2; gbc.insets = new Insets(10, 0, 10, 0); card.add(keyField, gbc);
+            gbc.gridy = 3; card.add(joinBtn, gbc);
+            gbc.gridy = 4; gbc.insets = new Insets(20, 0, 20, 0); JSeparator sep = new JSeparator(); sep.setForeground(Color.LIGHT_GRAY); card.add(sep, gbc);
+            gbc.gridy = 5; gbc.insets = new Insets(0, 0, 10, 0); card.add(historyBtn, gbc);
+            gbc.gridy = 6; gbc.insets = new Insets(10, 0, 0, 0); card.add(logoutBtn, gbc);
 
-            JButton joinBtn = new JButton("Start Quiz");
-            styleButtonDark(joinBtn); joinBtn.setBackground(ACCENT_BLUE); joinBtn.setPreferredSize(new Dimension(350, 45));
-
-            JButton historyBtn = new JButton("View My Grades");
-            styleButtonDark(historyBtn); historyBtn.setBackground(new Color(230, 126, 34)); historyBtn.setPreferredSize(new Dimension(350, 45));
-
-            JButton logoutBtn = new JButton("Logout");
-            styleButtonDark(logoutBtn); logoutBtn.setBackground(DANGER_COLOR); logoutBtn.setPreferredSize(new Dimension(350, 45));
-
-            gbc.gridy = 0; gbc.insets = new Insets(10, 0, 5, 0); add(title, gbc);
-            gbc.gridy = 1; gbc.insets = new Insets(0, 0, 40, 0); add(subtitle, gbc);
-            gbc.gridy = 2; gbc.insets = new Insets(10, 0, 10, 0); add(keyField, gbc);
-            gbc.gridy = 3; add(joinBtn, gbc);
-            gbc.gridy = 4; gbc.insets = new Insets(30, 0, 10, 0); JSeparator sep = new JSeparator(); sep.setPreferredSize(new Dimension(200, 1)); sep.setForeground(Color.GRAY); add(sep, gbc);
-            gbc.gridy = 5; gbc.insets = new Insets(10, 0, 10, 0); add(historyBtn, gbc);
-            gbc.gridy = 6; gbc.insets = new Insets(30, 0, 0, 0); add(logoutBtn, gbc);
-
+            add(card);
             logoutBtn.addActionListener(e -> switchCard("LOGIN"));
             historyBtn.addActionListener(e -> { mainPanel.add(new ViewScorePanel(student), "SCORE"); switchCard("SCORE"); });
-            
             joinBtn.addActionListener(e -> {
                 String key = keyField.getText().trim().toUpperCase();
+                if(key.equals("ENTER QUIZ KEY HERE") || key.isEmpty()) return;
                 Quiz quiz = student.joinQuiz(key);
                 if (quiz != null) { mainPanel.add(new DoQuizPanel(student, quiz), "DO"); switchCard("DO"); } 
                 else { JOptionPane.showMessageDialog(this, "Quiz not found or inactive!", "Error", JOptionPane.ERROR_MESSAGE); }
@@ -325,101 +308,115 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
+    // ==================================================================================
     // 5. CREATE QUIZ PANEL
-    class CreateQuizPanel extends JPanel {
+    // ==================================================================================
+    class CreateQuizPanel extends GradientPanel {
         List<Question> questions = new ArrayList<>();
-        JTextField titleField = new JTextField(20);
-        JTextField timeField = new JTextField(5);
-        JTextField qText = new JTextField();
-        JTextField opA = new JTextField(); JTextField opB = new JTextField(); JTextField opC = new JTextField(); JTextField opD = new JTextField();
+        JTextField titleField = new RoundedTextField(20); 
+        JTextField timeField = new RoundedTextField(5);
+        JTextArea qTextArea = new JTextArea(3, 20); 
+        JTextField opA = new RoundedTextField(15); JTextField opB = new RoundedTextField(15); 
+        JTextField opC = new RoundedTextField(15); JTextField opD = new RoundedTextField(15);
         JComboBox<String> correctBox = new JComboBox<>(new String[]{"A", "B", "C", "D"});
 
         public CreateQuizPanel(Teacher teacher) {
             setLayout(new BorderLayout());
-            setBackground(LIGHT_BG);
 
-            JPanel header = new JPanel(new GridLayout(1, 2, 20, 0));
-            header.setBackground(Color.WHITE); header.setBorder(new EmptyBorder(15, 20, 15, 20));
-            JPanel p1 = new JPanel(new BorderLayout()); p1.setBackground(Color.WHITE); p1.add(new JLabel("Quiz Title: "), BorderLayout.WEST); p1.add(titleField, BorderLayout.CENTER);
-            JPanel p2 = new JPanel(new BorderLayout()); p2.setBackground(Color.WHITE); p2.add(new JLabel("  Time (sec): "), BorderLayout.WEST); p2.add(timeField, BorderLayout.CENTER);
-            header.add(p1); header.add(p2); add(header, BorderLayout.NORTH);
+            JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20)); header.setOpaque(false);
+            JLabel lblTitle = new JLabel("Quiz Title:"); lblTitle.setForeground(Color.WHITE); lblTitle.setFont(FONT_BOLD);
+            JLabel lblTime = new JLabel("Time (s):"); lblTime.setForeground(Color.WHITE); lblTime.setFont(FONT_BOLD);
+            titleField.setPreferredSize(new Dimension(300, 40)); timeField.setPreferredSize(new Dimension(80, 40)); timeField.setHorizontalAlignment(JTextField.CENTER); timeField.setText("30");
+            header.add(lblTitle); header.add(titleField); header.add(lblTime); header.add(timeField);
+            add(header, BorderLayout.NORTH);
 
-            JPanel form = new JPanel(new GridLayout(8, 1, 5, 5));
-            form.setBackground(LIGHT_BG); form.setBorder(new EmptyBorder(10, 50, 10, 50));
-            qText.setBorder(BorderFactory.createTitledBorder("Question Text"));
-            opA.setBorder(BorderFactory.createTitledBorder("Option A"));
-            opB.setBorder(BorderFactory.createTitledBorder("Option B"));
-            opC.setBorder(BorderFactory.createTitledBorder("Option C"));
-            opD.setBorder(BorderFactory.createTitledBorder("Option D"));
-            correctBox.setBorder(BorderFactory.createTitledBorder("Correct Answer")); correctBox.setBackground(Color.WHITE);
+            JPanel formCard = new JPanel(new GridBagLayout()); formCard.setBackground(Color.WHITE);
+            formCard.setBorder(new CompoundBorder(new LineBorder(new Color(255,255,255,50), 1, true), new EmptyBorder(20, 40, 20, 40)));
+            JPanel centerWrapper = new JPanel(new GridBagLayout()); centerWrapper.setOpaque(false); centerWrapper.add(formCard);
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(10, 10, 5, 10); gbc.fill = GridBagConstraints.HORIZONTAL; gbc.gridx = 0; gbc.gridy = 0;
 
-            form.add(qText); form.add(opA); form.add(opB); form.add(opC); form.add(opD); form.add(correctBox);
-            JButton addQBtn = new JButton("Save Question to Draft"); styleButtonDark(addQBtn); addQBtn.setBackground(ACCENT_BLUE); form.add(addQBtn);
-            add(new JScrollPane(form), BorderLayout.CENTER);
+            JLabel lblQ = new JLabel("Question Text"); lblQ.setFont(new Font("Segoe UI", Font.BOLD, 12)); lblQ.setForeground(COL_TEXT_DARK);
+            formCard.add(lblQ, gbc);
+            gbc.gridy++; gbc.gridwidth = 2;
+            qTextArea.setLineWrap(true); qTextArea.setWrapStyleWord(true); qTextArea.setFont(FONT_NORMAL);
+            qTextArea.setBorder(BorderFactory.createCompoundBorder(new LineBorder(Color.LIGHT_GRAY), new EmptyBorder(10,10,10,10)));
+            JScrollPane qScroll = new JScrollPane(qTextArea); qScroll.setPreferredSize(new Dimension(500, 80));
+            formCard.add(qScroll, gbc);
 
-            JPanel footer = new JPanel(); footer.setBackground(PRIMARY_COLOR); footer.setBorder(new EmptyBorder(10, 10, 10, 10));
-            JLabel countLabel = new JLabel("Questions in Draft: 0   |   "); countLabel.setForeground(Color.WHITE); countLabel.setFont(FONT_BOLD);
-            JButton finishBtn = new JButton("Finish & Upload Quiz"); styleButtonDark(finishBtn); finishBtn.setBackground(new Color(39, 174, 96)); finishBtn.setPreferredSize(new Dimension(200, 40));
-            JButton backBtn = new JButton("Cancel / Back"); styleButtonDark(backBtn); backBtn.setBackground(DANGER_COLOR); backBtn.setPreferredSize(new Dimension(150, 40));
+            gbc.gridy++; gbc.gridwidth = 1; gbc.insets = new Insets(15, 10, 5, 10);
+            formCard.add(createLabel("Option A (Red)"), gbc); gbc.gridx = 1; formCard.add(createLabel("Option B (Blue)"), gbc);
+            gbc.gridy++; gbc.gridx = 0; gbc.insets = new Insets(0, 10, 10, 10);
+            formCard.add(opA, gbc); gbc.gridx = 1; formCard.add(opB, gbc);
 
-            footer.add(countLabel); footer.add(finishBtn); footer.add(backBtn); add(footer, BorderLayout.SOUTH);
+            gbc.gridy++; gbc.gridx = 0; gbc.insets = new Insets(5, 10, 5, 10);
+            formCard.add(createLabel("Option C (Yellow)"), gbc); gbc.gridx = 1; formCard.add(createLabel("Option D (Green)"), gbc);
+            gbc.gridy++; gbc.gridx = 0; gbc.insets = new Insets(0, 10, 20, 10);
+            formCard.add(opC, gbc); gbc.gridx = 1; formCard.add(opD, gbc);
 
-            backBtn.addActionListener(e -> {
-                if (!questions.isEmpty() || !qText.getText().isEmpty()) {
-                    int confirm = JOptionPane.showConfirmDialog(this, "You have unsaved questions. Go back?", "Warning", JOptionPane.YES_NO_OPTION);
-                    if (confirm != JOptionPane.YES_OPTION) return;
-                }
-                switchCard("TEACHER_DASH");
-            });
+            gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 1; gbc.insets = new Insets(0, 10, 0, 10);
+            formCard.add(createLabel("Correct Answer:"), gbc);
+            gbc.gridx = 1; correctBox.setPreferredSize(new Dimension(100, 35)); correctBox.setBackground(Color.WHITE); formCard.add(correctBox, gbc);
 
+            gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2; gbc.insets = new Insets(20, 10, 0, 10);
+            RoundedGradientButton addQBtn = new RoundedGradientButton("Save Question to Draft", COL_BTN_START, COL_BTN_END);
+            formCard.add(addQBtn, gbc);
+            add(centerWrapper, BorderLayout.CENTER);
+
+            JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10)); footer.setOpaque(false); footer.setBorder(new EmptyBorder(10, 10, 20, 10));
+            JLabel countLabel = new JLabel("Draft: 0 Questions"); countLabel.setForeground(Color.WHITE); countLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            RoundedGradientButton finishBtn = new RoundedGradientButton("Upload Quiz", COL_SUCCESS, COL_SUCCESS.darker()); finishBtn.setPreferredSize(new Dimension(180, 45));
+            RoundedGradientButton backBtn = new RoundedGradientButton("Cancel", COL_DANGER, COL_DANGER.darker()); backBtn.setPreferredSize(new Dimension(120, 45));
+            footer.add(backBtn); footer.add(Box.createHorizontalStrut(20)); footer.add(countLabel); footer.add(Box.createHorizontalStrut(20)); footer.add(finishBtn); 
+            add(footer, BorderLayout.SOUTH);
+
+            backBtn.addActionListener(e -> switchCard("TEACHER_DASH"));
             addQBtn.addActionListener(e -> {
-                if(qText.getText().trim().isEmpty() || opA.getText().trim().isEmpty()) { JOptionPane.showMessageDialog(this, "Fields empty!"); return; }
-                questions.add(new Question(qText.getText(), opA.getText(), opB.getText(), opC.getText(), opD.getText(), (String)correctBox.getSelectedItem()));
-                countLabel.setText("Questions in Draft: " + questions.size() + "   |   ");
-                JOptionPane.showMessageDialog(this, "Question Saved to Draft!");
-                qText.setText(""); opA.setText(""); opB.setText(""); opC.setText(""); opD.setText(""); qText.requestFocus();
+                if(qTextArea.getText().trim().isEmpty() || opA.getText().trim().isEmpty()) { JOptionPane.showMessageDialog(this, "Please fill all fields!"); return; }
+                questions.add(new Question(qTextArea.getText(), opA.getText(), opB.getText(), opC.getText(), opD.getText(), (String)correctBox.getSelectedItem()));
+                countLabel.setText("Draft: " + questions.size() + " Questions");
+                JOptionPane.showMessageDialog(this, "Question Added!");
+                qTextArea.setText(""); opA.setText(""); opB.setText(""); opC.setText(""); opD.setText(""); qTextArea.requestFocus();
             });
-
             finishBtn.addActionListener(e -> {
-                if(questions.isEmpty()) { JOptionPane.showMessageDialog(this, "Add questions first!"); return; }
+                if(questions.isEmpty()) { JOptionPane.showMessageDialog(this, "Add at least one question!"); return; }
                 try {
                     int time = Integer.parseInt(timeField.getText());
                     Quiz q = teacher.createQuiz(titleField.getText(), time, questions);
-                    if(q != null) { JOptionPane.showMessageDialog(this, "Quiz Created! Key: " + q.getQuizKey()); switchCard("TEACHER_DASH"); }
+                    if(q != null) { JOptionPane.showMessageDialog(this, "Quiz Created! Code: " + q.getQuizKey()); switchCard("TEACHER_DASH"); }
                 } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid Time!"); }
             });
         }
+        private JLabel createLabel(String text) { JLabel l = new JLabel(text); l.setFont(new Font("Segoe UI", Font.BOLD, 12)); l.setForeground(Color.GRAY); return l; }
     }
 
-    // 6. VIEW QUIZ PANEL (TEACHER - CRUD)
-    class ViewQuizPanel extends JPanel {
+    // ==================================================================================
+    // 6. VIEW QUIZ PANEL (WITH DARK BACKGROUND & WHITE CARD)
+    // ==================================================================================
+    class ViewQuizPanel extends GradientPanel {
         JTable table; DefaultTableModel model; Teacher teacher;
 
         public ViewQuizPanel(Teacher teacher) {
             this.teacher = teacher;
-            setLayout(new BorderLayout()); setBackground(DARK_BG);
+            setLayout(new BorderLayout()); 
+            // 1. Set Padding on MAIN PANEL so the background shows through around the card
+            setBorder(new EmptyBorder(30, 40, 30, 40)); 
+
+            // 2. The Card is WHITE
+            JPanel contentCard = new JPanel(new BorderLayout()); 
+            contentCard.setBackground(Color.WHITE);
+            // No border needed on card itself (or minimal)
 
             JLabel title = new JLabel("Manage My Quizzes", SwingConstants.CENTER);
-            title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE); title.setBorder(new EmptyBorder(30, 0, 20, 0));
-            add(title, BorderLayout.NORTH);
+            title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); title.setBorder(new EmptyBorder(20, 0, 20, 0));
+            contentCard.add(title, BorderLayout.NORTH);
 
             String[] cols = {"ID", "Title", "Key", "Time (s)", "Status", "Actions"};
             model = new DefaultTableModel(cols, 0) { @Override public boolean isCellEditable(int row, int column) { return column == 5; } };
 
             table = new JTable(model);
-            table.setRowHeight(55); table.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-            table.setBackground(INPUT_BG); table.setForeground(TEXT_WHITE); table.setGridColor(new Color(80, 80, 80));
-            table.setShowVerticalLines(false); table.setSelectionBackground(ACCENT_BLUE); table.setSelectionForeground(Color.WHITE);
-
-            table.getTableHeader().setDefaultRenderer((t, value, isSelected, hasFocus, row, col) -> {
-                JLabel l = new JLabel(value.toString()); l.setOpaque(true); l.setBackground(ACCENT_BLUE); l.setForeground(Color.WHITE);
-                l.setFont(new Font("Segoe UI", Font.BOLD, 16)); l.setHorizontalAlignment(JLabel.CENTER); return l;
-            });
-            table.getTableHeader().setPreferredSize(new Dimension(0, 50));
-
-            javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
-            centerRenderer.setHorizontalAlignment(JLabel.CENTER); centerRenderer.setBackground(INPUT_BG); centerRenderer.setForeground(TEXT_WHITE);
-            for(int i=0; i<5; i++) table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+            styleModernTable(table);
 
             table.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer());
             table.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(new JCheckBox()));
@@ -427,14 +424,16 @@ public class QuizlyGUI extends JFrame {
 
             refreshTableData();
 
-            JScrollPane scrollPane = new JScrollPane(table); scrollPane.getViewport().setBackground(DARK_BG); scrollPane.setBorder(BorderFactory.createLineBorder(INPUT_BG));
-            JPanel tableContainer = new JPanel(new BorderLayout()); tableContainer.setBackground(DARK_BG); tableContainer.setBorder(new EmptyBorder(0, 50, 0, 50));
-            tableContainer.add(scrollPane, BorderLayout.CENTER); add(tableContainer, BorderLayout.CENTER);
+            JScrollPane scrollPane = new JScrollPane(table); scrollPane.setBorder(null); scrollPane.getViewport().setBackground(Color.WHITE);
+            contentCard.add(scrollPane, BorderLayout.CENTER);
 
-            JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20)); footer.setBackground(DARK_BG);
-            JButton openBtn = new JButton("Open Leaderboard"); styleButtonDark(openBtn); openBtn.setBackground(new Color(39, 174, 96)); openBtn.setPreferredSize(new Dimension(200, 45));
-            JButton backBtn = new JButton("Back to Dashboard"); styleButtonDark(backBtn); backBtn.setBackground(DANGER_COLOR); backBtn.setPreferredSize(new Dimension(200, 45));
-            footer.add(openBtn); footer.add(backBtn); add(footer, BorderLayout.SOUTH);
+            JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20)); footer.setBackground(Color.WHITE);
+            RoundedGradientButton openBtn = new RoundedGradientButton("Open Leaderboard", COL_SUCCESS, COL_SUCCESS.darker()); openBtn.setPreferredSize(new Dimension(200, 45));
+            RoundedGradientButton backBtn = new RoundedGradientButton("Back to Dashboard", COL_DANGER, COL_DANGER.darker()); backBtn.setPreferredSize(new Dimension(200, 45));
+            footer.add(openBtn); footer.add(backBtn); 
+            contentCard.add(footer, BorderLayout.SOUTH);
+
+            add(contentCard, BorderLayout.CENTER); 
 
             backBtn.addActionListener(e -> switchCard("TEACHER_DASH"));
             openBtn.addActionListener(e -> {
@@ -456,10 +455,10 @@ public class QuizlyGUI extends JFrame {
         class ButtonRenderer extends javax.swing.table.DefaultTableCellRenderer {
             @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-                panel.setBackground(isSelected ? table.getSelectionBackground() : INPUT_BG); panel.setBorder(new EmptyBorder(2, 5, 2, 5)); 
+                panel.setBackground(isSelected ? new Color(232, 240, 254) : (row % 2 == 0 ? Color.WHITE : new Color(248, 249, 250)));
                 JButton statusBtn = new JButton("On/Off"); styleMiniButton(statusBtn, new Color(142, 68, 173));
                 JButton editBtn = new JButton("Edit"); styleMiniButton(editBtn, new Color(243, 156, 18));
-                JButton delBtn = new JButton("Del"); styleMiniButton(delBtn, DANGER_COLOR);
+                JButton delBtn = new JButton("Del"); styleMiniButton(delBtn, COL_DANGER);
                 panel.add(statusBtn); panel.add(editBtn); panel.add(delBtn);
                 return panel;
             }
@@ -469,10 +468,10 @@ public class QuizlyGUI extends JFrame {
             protected JPanel panel; protected JButton statusBtn, editBtn, delBtn; private int currentRow;
             public ButtonEditor(JCheckBox checkBox) {
                 super(checkBox);
-                panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5)); panel.setBackground(INPUT_BG); panel.setBorder(new EmptyBorder(2, 5, 2, 5));
+                panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5)); panel.setBackground(Color.WHITE);
                 statusBtn = new JButton("On/Off"); styleMiniButton(statusBtn, new Color(142, 68, 173));
                 editBtn = new JButton("Edit"); styleMiniButton(editBtn, new Color(243, 156, 18));
-                delBtn = new JButton("Del"); styleMiniButton(delBtn, DANGER_COLOR);
+                delBtn = new JButton("Del"); styleMiniButton(delBtn, COL_DANGER);
                 panel.add(statusBtn); panel.add(editBtn); panel.add(delBtn);
 
                 statusBtn.addActionListener(e -> {
@@ -485,7 +484,6 @@ public class QuizlyGUI extends JFrame {
                         refreshTableData();
                     } catch (Exception ex) { ex.printStackTrace(); }
                 });
-
                 editBtn.addActionListener(e -> {
                     fireEditingStopped();
                     int quizId = (int) table.getValueAt(currentRow, 0);
@@ -493,7 +491,6 @@ public class QuizlyGUI extends JFrame {
                     int time = (int) table.getValueAt(currentRow, 3);
                     mainPanel.add(new EditQuizPanel(teacher, quizId, title, time), "EDIT_QUIZ"); switchCard("EDIT_QUIZ");
                 });
-
                 delBtn.addActionListener(e -> {
                     fireEditingStopped();
                     int quizId = (int) table.getValueAt(currentRow, 0);
@@ -509,43 +506,41 @@ public class QuizlyGUI extends JFrame {
             @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) { currentRow = row; panel.setBackground(table.getSelectionBackground()); return panel; }
             @Override public Object getCellEditorValue() { return ""; }
         }
-
         private void styleMiniButton(JButton btn, Color color) {
             btn.setBackground(color); btn.setForeground(Color.WHITE); btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
-            btn.setBorderPainted(false); btn.setFocusPainted(false); btn.setPreferredSize(new Dimension(75, 35));
-            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btn.setBorderPainted(false); btn.setFocusPainted(false); btn.setPreferredSize(new Dimension(75, 35)); btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
     }
 
-    // 7. DO QUIZ PANEL (AUDIO + GAMIFIED)
-    class DoQuizPanel extends JPanel {
+    // ==================================================================================
+    // 7. DO QUIZ PANEL (DARK GAME MODE)
+    // ==================================================================================
+    class DoQuizPanel extends GradientPanel {
         Student student; Quiz quiz; int idx = 0; int sessionId = 0;
         JLabel qLabel = new JLabel(); JLabel timerLabel = new JLabel("0s"); JLabel progressLabel = new JLabel();
         JButton btnA = new JButton(); JButton btnB = new JButton(); JButton btnC = new JButton(); JButton btnD = new JButton();
         final Color COL_A = new Color(231, 76, 60); final Color COL_B = new Color(41, 128, 185);
         final Color COL_C = new Color(241, 196, 15); final Color COL_D = new Color(39, 174, 96);
-        Thread timerThread; boolean isRunning = false; int timeLeft;
-        Clip bgmClip;
+        Thread timerThread; boolean isRunning = false; int timeLeft; Clip bgmClip;
 
         public DoQuizPanel(Student student, Quiz quiz) {
             this.student = student; this.quiz = quiz;
-            setLayout(new BorderLayout()); setBackground(DARK_BG);
+            setLayout(new BorderLayout()); 
 
-            JPanel topPanel = new JPanel(new BorderLayout()); topPanel.setBackground(DARK_BG); topPanel.setBorder(new EmptyBorder(20, 30, 0, 30));
-            progressLabel.setFont(FONT_BOLD); progressLabel.setForeground(TEXT_WHITE);
+            JPanel topPanel = new JPanel(new BorderLayout()); topPanel.setOpaque(false); topPanel.setBorder(new EmptyBorder(20, 30, 0, 30));
+            progressLabel.setFont(FONT_BOLD); progressLabel.setForeground(Color.WHITE);
             timerLabel.setFont(new Font("Segoe UI", Font.BOLD, 30)); timerLabel.setForeground(Color.WHITE);
             topPanel.add(progressLabel, BorderLayout.WEST); topPanel.add(timerLabel, BorderLayout.EAST); add(topPanel, BorderLayout.NORTH);
 
-            JPanel qPanel = new JPanel(new BorderLayout()); qPanel.setBackground(DARK_BG); qPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
-            qLabel.setHorizontalAlignment(SwingConstants.CENTER); qLabel.setFont(new Font("Segoe UI", Font.BOLD, 28)); qLabel.setForeground(TEXT_WHITE);
+            JPanel qPanel = new JPanel(new BorderLayout()); qPanel.setOpaque(false); qPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
+            qLabel.setHorizontalAlignment(SwingConstants.CENTER); qLabel.setFont(new Font("Segoe UI", Font.BOLD, 28)); qLabel.setForeground(Color.WHITE);
             qPanel.add(qLabel, BorderLayout.CENTER); add(qPanel, BorderLayout.CENTER);
 
-            JPanel gridPanel = new JPanel(new GridLayout(2, 2, 15, 15)); gridPanel.setBackground(DARK_BG); gridPanel.setBorder(new EmptyBorder(20, 20, 30, 20)); gridPanel.setPreferredSize(new Dimension(0, 300));
+            JPanel gridPanel = new JPanel(new GridLayout(2, 2, 15, 15)); gridPanel.setOpaque(false); gridPanel.setBorder(new EmptyBorder(20, 20, 30, 20)); gridPanel.setPreferredSize(new Dimension(0, 300));
             styleOptionButton(btnA, COL_A); styleOptionButton(btnB, COL_B); styleOptionButton(btnC, COL_C); styleOptionButton(btnD, COL_D);
             gridPanel.add(btnA); gridPanel.add(btnB); gridPanel.add(btnC); gridPanel.add(btnD); add(gridPanel, BorderLayout.SOUTH);
 
             startDBSession(); loadQ(0); playAudio("bgm.wav", true);
-
             btnA.addActionListener(e -> process("A")); btnB.addActionListener(e -> process("B"));
             btnC.addActionListener(e -> process("C")); btnD.addActionListener(e -> process("D"));
         }
@@ -562,9 +557,7 @@ public class QuizlyGUI extends JFrame {
                 }
             } catch (Exception e) {}
         }
-
         private void stopBGM() { if (bgmClip != null && bgmClip.isRunning()) { bgmClip.stop(); bgmClip.close(); } }
-
         private void styleOptionButton(JButton btn, Color color) {
             btn.setFont(new Font("Segoe UI", Font.BOLD, 20)); btn.setForeground(Color.WHITE); btn.setBackground(color);
             btn.setFocusPainted(false); btn.setBorderPainted(false); btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -573,7 +566,6 @@ public class QuizlyGUI extends JFrame {
                 public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(color); }
             });
         }
-
         void startDBSession() {
             try {
                 Connection c = DatabaseHelper.getConnection();
@@ -582,7 +574,6 @@ public class QuizlyGUI extends JFrame {
                 ResultSet rs = s.getGeneratedKeys(); if(rs.next()) sessionId = rs.getInt(1);
             } catch(Exception e){}
         }
-
         void loadQ(int i) {
             if(i >= quiz.getQuestions().size()) { finish("Quiz Completed!"); return; }
             Question q = quiz.getQuestions().get(i);
@@ -593,7 +584,6 @@ public class QuizlyGUI extends JFrame {
             btnA.setEnabled(true); btnB.setEnabled(true); btnC.setEnabled(true); btnD.setEnabled(true);
             startTimer(quiz.getTimeLimit());
         }
-
         void startTimer(int sec) {
             isRunning = false; if(timerThread!=null) try{timerThread.join();}catch(Exception e){}
             timeLeft = sec; isRunning = true; timerLabel.setForeground(Color.WHITE);
@@ -602,16 +592,27 @@ public class QuizlyGUI extends JFrame {
                     try { SwingUtilities.invokeLater(()-> { timerLabel.setText(timeLeft + ""); if(timeLeft <= 5) timerLabel.setForeground(new Color(231, 76, 60)); }); Thread.sleep(1000); timeLeft--; } catch(Exception e){}
                 }
                 if(timeLeft<=0 && isRunning) SwingUtilities.invokeLater(()-> finish("Time's Up!"));
-            });
-            timerThread.start();
+            }); timerThread.start();
         }
 
         void process(String ans) {
             isRunning = false;
-            btnA.setEnabled(false); btnB.setEnabled(false); btnC.setEnabled(false); btnD.setEnabled(false);
+            // Matikan tombol agar tidak bisa diklik dua kali
+            btnA.setEnabled(false); btnB.setEnabled(false); 
+            btnC.setEnabled(false); btnD.setEnabled(false);
+            
             if (ans != null) {
-                Question q = quiz.getQuestions().get(idx); boolean correct = ans.equals(q.getCorrectAnswer());
-                if (!correct) playAudio("wrong.wav", false);
+                Question q = quiz.getQuestions().get(idx); 
+                boolean correct = ans.equals(q.getCorrectAnswer());
+                
+                // --- BAGIAN INI YANG DIUBAH ---
+                if (correct) {
+                    playAudio("correct.wav", false); // Putar suara BENAR
+                } else {
+                    playAudio("wrong.wav", false);   // Putar suara SALAH
+                }
+                // ------------------------------
+
                 try {
                     Connection c = DatabaseHelper.getConnection();
                     PreparedStatement s = c.prepareStatement("INSERT INTO user_answer (id_session,id_question,answer,is_correct) VALUES (?,?,?,?)");
@@ -620,7 +621,6 @@ public class QuizlyGUI extends JFrame {
             }
             Timer delay = new Timer(300, e -> { idx++; loadQ(idx); }); delay.setRepeats(false); delay.start();
         }
-
         void finish(String statusMsg) {
             isRunning = false; stopBGM();
             try {
@@ -644,11 +644,23 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // 8. VIEW SCORE PANEL (STUDENT HISTORY)
-    class ViewScorePanel extends JPanel {
+    // ==================================================================================
+    // 8. VIEW SCORE PANEL (WITH DARK BACKGROUND & WHITE CARD)
+    // ==================================================================================
+    class ViewScorePanel extends GradientPanel {
         public ViewScorePanel(Student student) {
-            setLayout(new BorderLayout()); setBackground(DARK_BG);
-            JLabel title = new JLabel("My Quiz History", SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE); title.setBorder(new EmptyBorder(30, 0, 30, 0)); add(title, BorderLayout.NORTH);
+            setLayout(new BorderLayout()); 
+            // 1. Margin Luar (Agar Background Gradient Kelihatan)
+            setBorder(new EmptyBorder(30, 40, 30, 40));
+
+            // 2. Kartu Putih
+            JPanel contentCard = new JPanel(new BorderLayout()); 
+            contentCard.setBackground(Color.WHITE);
+
+            JLabel title = new JLabel("My Quiz History", SwingConstants.CENTER); 
+            title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); title.setBorder(new EmptyBorder(20, 0, 20, 0)); 
+            contentCard.add(title, BorderLayout.NORTH);
+            
             String[] columns = {"Quiz Title", "Score", "Completed At"};
             DefaultTableModel model = new DefaultTableModel(columns, 0);
             try {
@@ -658,28 +670,37 @@ public class QuizlyGUI extends JFrame {
                 while (rs.next()) { model.addRow(new Object[]{rs.getString("title"), rs.getInt("total_score"), rs.getTimestamp("completed_at")}); }
             } catch (Exception e) {}
 
-            JTable table = new JTable(model); table.setRowHeight(40); table.setFont(new Font("Segoe UI", Font.PLAIN, 16)); table.setBackground(INPUT_BG); table.setForeground(TEXT_WHITE); table.setGridColor(new Color(80, 80, 80)); table.setShowVerticalLines(false); table.setSelectionBackground(ACCENT_BLUE); table.setSelectionForeground(Color.WHITE);
-            table.getTableHeader().setDefaultRenderer((t, value, isSelected, hasFocus, row, col) -> { JLabel l = new JLabel(value.toString()); l.setOpaque(true); l.setBackground(ACCENT_BLUE); l.setForeground(Color.WHITE); l.setFont(new Font("Segoe UI", Font.BOLD, 16)); l.setHorizontalAlignment(JLabel.CENTER); return l; });
-            table.getTableHeader().setPreferredSize(new Dimension(0, 50));
-            javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer(); centerRenderer.setHorizontalAlignment(JLabel.CENTER); centerRenderer.setBackground(INPUT_BG); centerRenderer.setForeground(TEXT_WHITE);
-            table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); 
+            JTable table = new JTable(model); styleModernTable(table); 
+            JScrollPane scrollPane = new JScrollPane(table); scrollPane.setBorder(null); scrollPane.getViewport().setBackground(Color.WHITE);
+            contentCard.add(scrollPane, BorderLayout.CENTER);
 
-            JScrollPane scrollPane = new JScrollPane(table); scrollPane.getViewport().setBackground(DARK_BG); scrollPane.setBorder(BorderFactory.createLineBorder(INPUT_BG));
-            JPanel tableContainer = new JPanel(new BorderLayout()); tableContainer.setBackground(DARK_BG); tableContainer.setBorder(new EmptyBorder(0, 50, 0, 50));
-            tableContainer.add(scrollPane, BorderLayout.CENTER); add(tableContainer, BorderLayout.CENTER);
+            JPanel footer = new JPanel(); footer.setBackground(Color.WHITE); footer.setBorder(new EmptyBorder(20, 0, 20, 0));
+            RoundedGradientButton backBtn = new RoundedGradientButton("Back to Dashboard", COL_DANGER, COL_DANGER.darker()); backBtn.setPreferredSize(new Dimension(250, 45));
+            footer.add(backBtn); contentCard.add(footer, BorderLayout.SOUTH);
 
-            JPanel footer = new JPanel(); footer.setBackground(DARK_BG); footer.setBorder(new EmptyBorder(30, 0, 30, 0));
-            JButton backBtn = new JButton("Back to Dashboard"); styleButtonDark(backBtn); backBtn.setBackground(DANGER_COLOR); backBtn.setPreferredSize(new Dimension(250, 50));
-            footer.add(backBtn); add(footer, BorderLayout.SOUTH);
+            add(contentCard, BorderLayout.CENTER); 
             backBtn.addActionListener(e -> switchCard("STUDENT_DASH"));
         }
     }
 
-    // 9. LEADERBOARD PANEL
-    class LeaderboardPanel extends JPanel {
+    // ==================================================================================
+    // 9. LEADERBOARD PANEL (WITH DARK BACKGROUND & WHITE CARD)
+    // ==================================================================================
+    class LeaderboardPanel extends GradientPanel {
         public LeaderboardPanel(int quizId, String quizTitle) {
-            setLayout(new BorderLayout()); setBackground(DARK_BG);
-            JLabel title = new JLabel("Leaderboard: " + quizTitle, SwingConstants.CENTER); title.setFont(FONT_TITLE_BIG); title.setForeground(ACCENT_BLUE); title.setBorder(new EmptyBorder(30, 0, 30, 0)); add(title, BorderLayout.NORTH);
+            setLayout(new BorderLayout()); 
+            
+            // 1. Margin Luar (Agar Background Gradient Kelihatan)
+            setBorder(new EmptyBorder(30, 40, 30, 40));
+
+            // 2. Kartu Putih Container
+            JPanel contentCard = new JPanel(new BorderLayout());
+            contentCard.setBackground(Color.WHITE);
+
+            JLabel title = new JLabel("Leaderboard: " + quizTitle, SwingConstants.CENTER); 
+            title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); title.setBorder(new EmptyBorder(20, 0, 20, 0)); 
+            contentCard.add(title, BorderLayout.NORTH);
+
             String[] cols = {"Rank", "Student Name", "Score", "Completed At"};
             DefaultTableModel model = new DefaultTableModel(cols, 0);
             try {
@@ -689,20 +710,20 @@ public class QuizlyGUI extends JFrame {
                 int manualRank = 1; while(rs.next()) { model.addRow(new Object[]{ "#" + manualRank++, rs.getString("username"), rs.getInt("score"), rs.getTimestamp("completed_at") }); }
             } catch (Exception e) { e.printStackTrace(); }
 
-            JTable table = new JTable(model); table.setRowHeight(40); table.setFont(new Font("Segoe UI", Font.PLAIN, 16)); table.setBackground(INPUT_BG); table.setForeground(TEXT_WHITE); table.setGridColor(new Color(80, 80, 80)); table.setShowVerticalLines(false);
-            table.getTableHeader().setDefaultRenderer((t, value, isSelected, hasFocus, row, col) -> { JLabel l = new JLabel(value.toString()); l.setOpaque(true); l.setBackground(ACCENT_BLUE); l.setForeground(Color.WHITE); l.setFont(new Font("Segoe UI", Font.BOLD, 16)); l.setHorizontalAlignment(JLabel.CENTER); return l; });
-            table.getTableHeader().setPreferredSize(new Dimension(0, 50));
-            javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer(); centerRenderer.setHorizontalAlignment(JLabel.CENTER); centerRenderer.setBackground(INPUT_BG); centerRenderer.setForeground(TEXT_WHITE);
-            table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+            JTable table = new JTable(model); 
+            styleModernTable(table); // Gunakan style tabel putih
+            
+            JScrollPane scrollPane = new JScrollPane(table); 
+            scrollPane.setBorder(null); scrollPane.getViewport().setBackground(Color.WHITE);
+            contentCard.add(scrollPane, BorderLayout.CENTER);
 
-            JScrollPane scrollPane = new JScrollPane(table); scrollPane.getViewport().setBackground(DARK_BG); scrollPane.setBorder(BorderFactory.createLineBorder(INPUT_BG));
-            JPanel tableContainer = new JPanel(new BorderLayout()); tableContainer.setBackground(DARK_BG); tableContainer.setBorder(new EmptyBorder(0, 50, 0, 50));
-            tableContainer.add(scrollPane, BorderLayout.CENTER); add(tableContainer, BorderLayout.CENTER);
-
-            JPanel footer = new JPanel(); footer.setBackground(DARK_BG); footer.setBorder(new EmptyBorder(30, 0, 30, 0));
+            JPanel footer = new JPanel(); footer.setBackground(Color.WHITE); footer.setBorder(new EmptyBorder(20, 0, 20, 0));
             String btnText = (currentUser instanceof Teacher) ? "Back to Quiz List" : "Back to Dashboard";
-            JButton backBtn = new JButton(btnText); styleButtonDark(backBtn); backBtn.setBackground(DANGER_COLOR); backBtn.setPreferredSize(new Dimension(250, 50));
-            footer.add(backBtn); add(footer, BorderLayout.SOUTH);
+            RoundedGradientButton backBtn = new RoundedGradientButton(btnText, COL_DANGER, COL_DANGER.darker()); 
+            backBtn.setPreferredSize(new Dimension(250, 45));
+            footer.add(backBtn); contentCard.add(footer, BorderLayout.SOUTH);
+
+            add(contentCard, BorderLayout.CENTER);
 
             backBtn.addActionListener(e -> {
                 if (currentUser instanceof Teacher) { switchCard("VIEW_QUIZ"); } else { switchCard("STUDENT_DASH"); }
@@ -710,39 +731,41 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // 10. EDIT QUIZ PANEL
-    class EditQuizPanel extends JPanel {
-        Teacher teacher; int quizId; JTextField titleField = new JTextField(); JTextField timeField = new JTextField();
+    // ==================================================================================
+    // 10. EDIT QUIZ PANEL (MODERN STYLE)
+    // ==================================================================================
+    class EditQuizPanel extends GradientPanel {
+        Teacher teacher; int quizId; 
+        JTextField titleField = new RoundedTextField(20); JTextField timeField = new RoundedTextField(5);
         JPanel questionsContainer; List<QuestionForm> questionForms = new ArrayList<>();
 
         public EditQuizPanel(Teacher teacher, int quizId, String currentTitle, int currentTime) {
             this.teacher = teacher; this.quizId = quizId;
-            setLayout(new BorderLayout()); setBackground(LIGHT_BG);
+            setLayout(new BorderLayout()); 
 
-            JPanel header = new JPanel(new GridLayout(1, 2, 20, 0)); header.setBackground(Color.WHITE); header.setBorder(new EmptyBorder(15, 20, 15, 20));
-            setupHeaderField(titleField, currentTitle); setupHeaderField(timeField, String.valueOf(currentTime));
-            JPanel p1 = new JPanel(new BorderLayout()); p1.setBackground(Color.WHITE); p1.add(new JLabel("Quiz Title: "), BorderLayout.WEST); p1.add(titleField, BorderLayout.CENTER);
-            JPanel p2 = new JPanel(new BorderLayout()); p2.setBackground(Color.WHITE); p2.add(new JLabel("  Time (sec): "), BorderLayout.WEST); p2.add(timeField, BorderLayout.CENTER);
-            header.add(p1); header.add(p2); add(header, BorderLayout.NORTH);
+            JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20)); header.setOpaque(false);
+            JLabel lblTitle = new JLabel("Quiz Title:"); lblTitle.setForeground(Color.WHITE); lblTitle.setFont(FONT_BOLD);
+            JLabel lblTime = new JLabel("Time (s):"); lblTime.setForeground(Color.WHITE); lblTime.setFont(FONT_BOLD);
+            titleField.setText(currentTitle); titleField.setPreferredSize(new Dimension(300, 40));
+            timeField.setText(String.valueOf(currentTime)); timeField.setPreferredSize(new Dimension(80, 40)); timeField.setHorizontalAlignment(JTextField.CENTER);
+            header.add(lblTitle); header.add(titleField); header.add(lblTime); header.add(timeField);
+            add(header, BorderLayout.NORTH);
 
-            questionsContainer = new JPanel(); questionsContainer.setLayout(new BoxLayout(questionsContainer, BoxLayout.Y_AXIS)); questionsContainer.setBackground(LIGHT_BG); questionsContainer.setBorder(new EmptyBorder(10, 10, 10, 10));
+            questionsContainer = new JPanel(); questionsContainer.setLayout(new BoxLayout(questionsContainer, BoxLayout.Y_AXIS)); 
+            questionsContainer.setBorder(new EmptyBorder(10, 10, 10, 10)); questionsContainer.setOpaque(false);
+            
             loadQuestionsFromDB();
             JScrollPane scrollPane = new JScrollPane(questionsContainer); scrollPane.getVerticalScrollBar().setUnitIncrement(16); scrollPane.setBorder(null); add(scrollPane, BorderLayout.CENTER);
 
-            JPanel footer = new JPanel(); footer.setBackground(PRIMARY_COLOR); footer.setBorder(new EmptyBorder(10, 10, 10, 10));
-            JButton addBtn = new JButton("Add New Question"); styleButtonDark(addBtn); addBtn.setBackground(ACCENT_BLUE); addBtn.setPreferredSize(new Dimension(200, 40));
-            JButton saveBtn = new JButton("Save Changes"); styleButtonDark(saveBtn); saveBtn.setBackground(new Color(39, 174, 96)); saveBtn.setPreferredSize(new Dimension(200, 40));
-            JButton cancelBtn = new JButton("Cancel"); styleButtonDark(cancelBtn); cancelBtn.setBackground(DANGER_COLOR); cancelBtn.setPreferredSize(new Dimension(150, 40));
+            JPanel footer = new JPanel(); footer.setOpaque(false); footer.setBorder(new EmptyBorder(10, 10, 10, 10));
+            RoundedGradientButton addBtn = new RoundedGradientButton("Add New Question"); addBtn.setPreferredSize(new Dimension(200, 40));
+            RoundedGradientButton saveBtn = new RoundedGradientButton("Save Changes", COL_SUCCESS, COL_SUCCESS.darker()); saveBtn.setPreferredSize(new Dimension(200, 40));
+            RoundedGradientButton cancelBtn = new RoundedGradientButton("Cancel", COL_DANGER, COL_DANGER.darker()); cancelBtn.setPreferredSize(new Dimension(150, 40));
             footer.add(addBtn); footer.add(saveBtn); footer.add(cancelBtn); add(footer, BorderLayout.SOUTH);
 
             cancelBtn.addActionListener(e -> switchCard("VIEW_QUIZ"));
             addBtn.addActionListener(e -> { addQuestionForm(null); SwingUtilities.invokeLater(() -> scrollPane.getVerticalScrollBar().setValue(scrollPane.getVerticalScrollBar().getMaximum())); });
             saveBtn.addActionListener(e -> saveAllChanges());
-        }
-
-        private void setupHeaderField(JTextField field, String text) {
-            field.setText(text); field.setFont(new Font("Segoe UI", Font.PLAIN, 16)); field.setForeground(Color.BLACK); field.setBackground(Color.WHITE); field.setCaretColor(Color.BLACK);
-            field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         }
 
         private void loadQuestionsFromDB() {
@@ -774,8 +797,7 @@ public class QuizlyGUI extends JFrame {
                         ps.setInt(1, quizId); ps.setString(2, form.qText.getText()); ps.setString(3, form.opA.getText()); ps.setString(4, form.opB.getText()); ps.setString(5, form.opC.getText()); ps.setString(6, form.opD.getText()); ps.setString(7, (String) form.correctBox.getSelectedItem()); ps.executeUpdate();
                     }
                 }
-                JOptionPane.showMessageDialog(this, "Quiz Updated Successfully!");
-                mainPanel.add(new ViewQuizPanel(teacher), "VIEW_QUIZ"); switchCard("VIEW_QUIZ");
+                JOptionPane.showMessageDialog(this, "Quiz Updated Successfully!"); mainPanel.add(new ViewQuizPanel(teacher), "VIEW_QUIZ"); switchCard("VIEW_QUIZ");
             } catch (Exception e) { JOptionPane.showMessageDialog(this, "Error saving: " + e.getMessage()); }
         }
 
@@ -795,7 +817,7 @@ public class QuizlyGUI extends JFrame {
                 formGrid.add(qText); formGrid.add(correctBox); formGrid.add(opA); formGrid.add(opB); formGrid.add(opC); formGrid.add(opD);
                 add(formGrid, BorderLayout.CENTER);
 
-                JButton deleteQBtn = new JButton("Delete Question"); deleteQBtn.setBackground(DANGER_COLOR); deleteQBtn.setForeground(Color.WHITE); deleteQBtn.setFont(new Font("Segoe UI", Font.BOLD, 12)); deleteQBtn.setBorderPainted(false);
+                JButton deleteQBtn = new JButton("Delete Question"); deleteQBtn.setBackground(COL_DANGER); deleteQBtn.setForeground(Color.WHITE); deleteQBtn.setFont(new Font("Segoe UI", Font.BOLD, 12)); deleteQBtn.setBorderPainted(false);
                 JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT)); btnPanel.setBackground(Color.WHITE); btnPanel.add(deleteQBtn); add(btnPanel, BorderLayout.SOUTH);
 
                 deleteQBtn.addActionListener(e -> {
@@ -806,28 +828,27 @@ public class QuizlyGUI extends JFrame {
                     }
                 });
             }
-
             private void setupInput(JTextField field, String title) {
-                field.setFont(new Font("Segoe UI", Font.PLAIN, 14)); field.setForeground(Color.BLACK); field.setBackground(new Color(250, 250, 250)); field.setCaretColor(Color.BLACK);
-                field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), title, javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 12), PRIMARY_COLOR), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+                field.setFont(new Font("Segoe UI", Font.PLAIN, 14)); 
+                field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY), title), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
             }
         }
     }
 
     //QUIZ RESULT PANEL
-    class QuizResultPanel extends JPanel {
+    class QuizResultPanel extends GradientPanel {
         public QuizResultPanel(String titleMsg, int score, int correctCount, int totalQuestions, int quizId, String quizTitle) {
-            setLayout(new GridBagLayout()); setBackground(DARK_BG);
+            setLayout(new GridBagLayout()); 
             GridBagConstraints gbc = new GridBagConstraints(); gbc.insets = new Insets(10, 0, 10, 0); gbc.gridx = 0; gbc.anchor = GridBagConstraints.CENTER;
 
             JLabel titleLabel = new JLabel(titleMsg); titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
-            if (titleMsg.equals("Time's Up!")) { titleLabel.setForeground(DANGER_COLOR); } else { titleLabel.setForeground(ACCENT_BLUE); }
+            if (titleMsg.equals("Time's Up!")) { titleLabel.setForeground(COL_DANGER); } else { titleLabel.setForeground(new Color(100, 255, 218)); }
 
             JLabel scoreLabel = new JLabel("Score: " + score); scoreLabel.setFont(new Font("Segoe UI", Font.BOLD, 48)); scoreLabel.setForeground(Color.WHITE);
             JLabel detailLabel = new JLabel("Correct Answers: " + correctCount + " / " + totalQuestions); detailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18)); detailLabel.setForeground(Color.LIGHT_GRAY);
 
-            JButton lbBtn = new JButton("View Leaderboard"); styleButtonDark(lbBtn); lbBtn.setBackground(new Color(39, 174, 96)); lbBtn.setPreferredSize(new Dimension(300, 50));
-            JButton homeBtn = new JButton("Back to Dashboard"); styleButtonDark(homeBtn); homeBtn.setBackground(PRIMARY_COLOR); homeBtn.setPreferredSize(new Dimension(300, 50));
+            RoundedGradientButton lbBtn = new RoundedGradientButton("View Leaderboard", COL_SUCCESS, COL_SUCCESS.darker()); lbBtn.setPreferredSize(new Dimension(300, 50));
+            RoundedGradientButton homeBtn = new RoundedGradientButton("Back to Dashboard"); homeBtn.setPreferredSize(new Dimension(300, 50));
 
             gbc.gridy = 0; add(titleLabel, gbc);
             gbc.gridy = 1; gbc.insets = new Insets(20, 0, 10, 0); add(scoreLabel, gbc);
