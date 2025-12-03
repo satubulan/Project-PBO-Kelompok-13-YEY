@@ -250,11 +250,11 @@ public class QuizSession implements Runnable {
         System.out.println("========================================\n");
     }
     
-    // Timer thread implementation (Interface Runnable)
+    // Timer thread 
     @Override
     public void run() {
         try {
-            Thread.sleep(timeLimit * 1000); // Convert to milliseconds
+            Thread.sleep(timeLimit * 1000); 
             timeUp = true;
         } catch (InterruptedException e) {
             // Timer stopped by user input
