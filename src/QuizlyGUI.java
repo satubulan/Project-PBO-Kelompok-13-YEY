@@ -513,7 +513,7 @@ public class QuizlyGUI extends JFrame {
     }
 
     // ==================================================================================
-    // 7. DO QUIZ PANEL (DARK GAME MODE)
+    // 7. DO QUIZ PANEL (DARK GAME MODE - FIXED TIMER LOGIC)
     // ==================================================================================
     class DoQuizPanel extends GradientPanel {
         Student student; Quiz quiz; int idx = 0; int sessionId = 0;
@@ -574,16 +574,25 @@ public class QuizlyGUI extends JFrame {
                 ResultSet rs = s.getGeneratedKeys(); if(rs.next()) sessionId = rs.getInt(1);
             } catch(Exception e){}
         }
+        
         void loadQ(int i) {
-            if(i >= quiz.getQuestions().size()) { finish("Quiz Completed!"); return; }
+            // Cek apakah soal sudah habis
+            if(i >= quiz.getQuestions().size()) { 
+                finish("Quiz Completed!"); 
+                return; 
+            }
             Question q = quiz.getQuestions().get(i);
             qLabel.setText("<html><div style='text-align: center;'>" + q.getQuestionText() + "</div></html>");
             progressLabel.setText((i+1) + " / " + quiz.getQuestions().size());
             btnA.setText("<html><center>" + q.getOptionA() + "</center></html>"); btnB.setText("<html><center>" + q.getOptionB() + "</center></html>");
             btnC.setText("<html><center>" + q.getOptionC() + "</center></html>"); btnD.setText("<html><center>" + q.getOptionD() + "</center></html>");
+            
+            // Hidupkan tombol kembali
             btnA.setEnabled(true); btnB.setEnabled(true); btnC.setEnabled(true); btnD.setEnabled(true);
+            
             startTimer(quiz.getTimeLimit());
         }
+        
         void startTimer(int sec) {
             isRunning = false; if(timerThread!=null) try{timerThread.join();}catch(Exception e){}
             timeLeft = sec; isRunning = true; timerLabel.setForeground(Color.WHITE);
@@ -591,56 +600,104 @@ public class QuizlyGUI extends JFrame {
                 while(timeLeft > 0 && isRunning) {
                     try { SwingUtilities.invokeLater(()-> { timerLabel.setText(timeLeft + ""); if(timeLeft <= 5) timerLabel.setForeground(new Color(231, 76, 60)); }); Thread.sleep(1000); timeLeft--; } catch(Exception e){}
                 }
-                if(timeLeft<=0 && isRunning) SwingUtilities.invokeLater(()-> finish("Time's Up!"));
-            }); timerThread.start();
+                // Jika waktu habis, panggil process(null)
+                if(timeLeft<=0 && isRunning) SwingUtilities.invokeLater(()-> process(null));
+            }); 
+            timerThread.start();
         }
 
         void process(String ans) {
             isRunning = false;
-            // Matikan tombol agar tidak bisa diklik dua kali
-            btnA.setEnabled(false); btnB.setEnabled(false); 
-            btnC.setEnabled(false); btnD.setEnabled(false);
+            btnA.setEnabled(false); btnB.setEnabled(false); btnC.setEnabled(false); btnD.setEnabled(false);
             
+            Question q = quiz.getQuestions().get(idx); 
+            boolean correct = false;
+            String dbAns = "TIMEOUT"; 
             if (ans != null) {
-                Question q = quiz.getQuestions().get(idx); 
-                boolean correct = ans.equals(q.getCorrectAnswer());
-                
-                // --- BAGIAN INI YANG DIUBAH ---
-                if (correct) {
-                    playAudio("correct.wav", false); // Putar suara BENAR
-                } else {
-                    playAudio("wrong.wav", false);   // Putar suara SALAH
-                }
-                // ------------------------------
-
-                try {
-                    Connection c = DatabaseHelper.getConnection();
-                    PreparedStatement s = c.prepareStatement("INSERT INTO user_answer (id_session,id_question,answer,is_correct) VALUES (?,?,?,?)");
-                    s.setInt(1,sessionId); s.setInt(2,q.getIdQuestion()); s.setString(3,ans); s.setBoolean(4,correct); s.executeUpdate();
-                } catch(Exception e){}
+                correct = ans.equals(q.getCorrectAnswer());
+                dbAns = ans;
+            } 
+            
+            if (correct) {
+                playAudio("correct.wav", false);
+            } else {
+                playAudio("wrong.wav", false); 
             }
-            Timer delay = new Timer(300, e -> { idx++; loadQ(idx); }); delay.setRepeats(false); delay.start();
-        }
-        void finish(String statusMsg) {
-            isRunning = false; stopBGM();
+
+            // Simpan ke DB
             try {
                 Connection c = DatabaseHelper.getConnection();
+                PreparedStatement s = c.prepareStatement("INSERT INTO user_answer (id_session,id_question,answer,is_correct) VALUES (?,?,?,?)");
+                s.setInt(1,sessionId); s.setInt(2,q.getIdQuestion()); s.setString(3,dbAns); s.setBoolean(4,correct); s.executeUpdate();
+            } catch(Exception e){}
+            
+            // Next soal dengan delay sedikit
+            Timer delay = new Timer(500, e -> { 
+                idx++; 
+                loadQ(idx); 
+            }); 
+            delay.setRepeats(false); delay.start();
+        }
+        
+        void finish(String statusMsg) {
+            isRunning = false; 
+            stopBGM();
+            
+            try {
+                Connection c = DatabaseHelper.getConnection();
+              
                 c.prepareStatement("UPDATE quiz_session SET status='COMPLETED', end_time=NOW() WHERE id_session="+sessionId).executeUpdate();
-                ResultSet rs = c.prepareStatement("SELECT COUNT(*) FROM user_answer WHERE is_correct=1 AND id_session="+sessionId).executeQuery();
-                int totalCorrect = 0; if(rs.next()) totalCorrect = rs.getInt(1); int finalScore = totalCorrect * 10;
-                
-                PreparedStatement ps = c.prepareStatement("INSERT INTO result (id_session,total_score) VALUES (?,?)");
-                ps.setInt(1,sessionId); ps.setInt(2,finalScore); ps.executeUpdate();
-                
-                PreparedStatement del = c.prepareStatement("DELETE FROM leaderboard WHERE id_quiz=? AND id_student=?");
-                del.setInt(1, quiz.getIdQuiz()); del.setInt(2, student.getIdUser()); del.executeUpdate();
 
-                PreparedStatement lb = c.prepareStatement("INSERT INTO leaderboard (id_quiz, id_student, score, `rank`) VALUES (?, ?, ?, 0)");
-                lb.setInt(1, quiz.getIdQuiz()); lb.setInt(2, student.getIdUser()); lb.setInt(3, finalScore); lb.executeUpdate();
-                
+                ResultSet rs = c.prepareStatement("SELECT COUNT(*) FROM user_answer WHERE is_correct=1 AND id_session="+sessionId).executeQuery();
+                int totalCorrect = 0; 
+                if(rs.next()) totalCorrect = rs.getInt(1);
+                int finalScore = totalCorrect * 10;
+            
+                PreparedStatement ps = c.prepareStatement("INSERT INTO result (id_session,total_score) VALUES (?,?)");
+                ps.setInt(1,sessionId); 
+                ps.setInt(2,finalScore); 
+                ps.executeUpdate();
+
+                String sqlCheck = "SELECT score FROM leaderboard WHERE id_quiz=? AND id_student=?";
+                PreparedStatement pCheck = c.prepareStatement(sqlCheck);
+                pCheck.setInt(1, quiz.getIdQuiz());
+                pCheck.setInt(2, student.getIdUser());
+                ResultSet rsCheck = pCheck.executeQuery();
+
+                boolean updateLeaderboard = false;
+
+                if (rsCheck.next()) {
+                    
+                    int oldScore = rsCheck.getInt("score");
+                    if (finalScore > oldScore) {
+                        updateLeaderboard = true; 
+                    }
+                } else {
+                    updateLeaderboard = true;
+                }
+
+                //  High Score
+                if (updateLeaderboard) {
+                    PreparedStatement del = c.prepareStatement("DELETE FROM leaderboard WHERE id_quiz=? AND id_student=?");
+                    del.setInt(1, quiz.getIdQuiz());
+                    del.setInt(2, student.getIdUser());
+                    del.executeUpdate();
+
+                    // Masukkan data baru
+                    PreparedStatement lb = c.prepareStatement("INSERT INTO leaderboard (id_quiz, id_student, score, `rank`) VALUES (?, ?, ?, 0)");
+                    lb.setInt(1, quiz.getIdQuiz());
+                    lb.setInt(2, student.getIdUser());
+                    lb.setInt(3, finalScore);
+                    lb.executeUpdate();
+                }
+          
                 mainPanel.add(new QuizResultPanel(statusMsg, finalScore, totalCorrect, quiz.getQuestions().size(), quiz.getIdQuiz(), quiz.getTitle()), "RESULT");
                 switchCard("RESULT");
-            } catch(Exception e){ e.printStackTrace(); JOptionPane.showMessageDialog(this, "Error saving score: " + e.getMessage()); }
+
+            } catch(Exception e){
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error saving score: " + e.getMessage());
+            }
         }
     }
 
