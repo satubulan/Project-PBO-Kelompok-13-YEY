@@ -11,12 +11,12 @@ import javax.swing.table.*;
 
 public class QuizlyGUI extends JFrame {
     
-    // --- PALET WARNA (DARK GRADIENT THEME) ---
+    // 1. Warna & Font
     final Color COL_GRADIENT_START = Color.decode("#141E30"); 
     final Color COL_GRADIENT_END   = Color.decode("#243B55"); 
     
-    final Color COL_BTN_START      = Color.decode("#4e54c8"); // Ungu Modern
-    final Color COL_BTN_END        = Color.decode("#8f94fb"); // Biru Muda
+    final Color COL_BTN_START      = Color.decode("#4e54c8");
+    final Color COL_BTN_END        = Color.decode("#8f94fb");
     
     final Color COL_DANGER         = Color.decode("#e74c3c"); 
     final Color COL_SUCCESS        = Color.decode("#2ecc71"); 
@@ -24,13 +24,12 @@ public class QuizlyGUI extends JFrame {
     final Color COL_FIELD_BG       = Color.decode("#f1f2f6");
     final Color COL_TABLE_HEAD     = Color.decode("#4e54c8");
 
-    // --- FONTS ---
     final Font FONT_TITLE_BIG = new Font("Segoe UI", Font.BOLD, 28);
     final Font FONT_TITLE     = new Font("Segoe UI", Font.BOLD, 22);
     final Font FONT_NORMAL    = new Font("Segoe UI", Font.PLAIN, 14);
     final Font FONT_BOLD      = new Font("Segoe UI", Font.BOLD, 14);
 
-    // Panel Management
+    // 2. Komponen Utama
     private JPanel mainPanel;
     private CardLayout cardLayout;
     User currentUser; 
@@ -41,15 +40,15 @@ public class QuizlyGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // 1. Init Database
+        // Init DB & Table
         DatabaseHelper.createDatabaseIfNotExists();
         DatabaseHelper.createTables();
 
-        // 2. Setup Layout
+        // Setup Layout
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // 3. Add Screens
+        // Tambah Panel Awal
         mainPanel.add(new LoginPanel(), "LOGIN");
         mainPanel.add(new RegisterPanel(), "REGISTER");
         
@@ -57,7 +56,7 @@ public class QuizlyGUI extends JFrame {
         setVisible(true); 
     }
 
-    // --- HELPER METHODS ---
+    // 3. Navigasi & Session
     public void switchCard(String cardName) {
         cardLayout.show(mainPanel, cardName);
     }
@@ -73,7 +72,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // --- HELPER: STYLE TABEL MODERN (WHITE/LIGHT) ---
+    // 4. Helper Style Table
     private void styleModernTable(JTable table) {
         table.setRowHeight(45);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -106,10 +105,7 @@ public class QuizlyGUI extends JFrame {
         for (int i = 0; i < table.getColumnCount(); i++) table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
     }
 
-    // ==================================================================================
-    // CUSTOM COMPONENT MODERN
-    // ==================================================================================
-    
+    // 5. Custom Component (Button, Field, Panel)
     class GradientPanel extends JPanel {
         @Override protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -160,10 +156,8 @@ public class QuizlyGUI extends JFrame {
         card.setBorder(new CompoundBorder(new LineBorder(new Color(0,0,0,30), 1, true), new EmptyBorder(40, 50, 40, 50)));
         return card;
     }
-
-    // ==================================================================================
-    // 1. LOGIN PANEL
-    // ==================================================================================
+    
+    // 6. Login Panel
     class LoginPanel extends GradientPanel {
         JTextField userField; JPasswordField passField;
 
@@ -198,9 +192,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 2. REGISTER PANEL
-    // ==================================================================================
+    // 7. Register Panel
     class RegisterPanel extends GradientPanel {
         JTextField userField; JPasswordField passField; JComboBox<String> roleBox;
 
@@ -236,9 +228,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 3. TEACHER DASHBOARD
-    // ==================================================================================
+    // 8. Teacher Dashboard
     class TeacherDashboard extends GradientPanel {
         public TeacherDashboard(Teacher teacher) {
             setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
@@ -265,9 +255,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 4. STUDENT DASHBOARD
-    // ==================================================================================
+    // 9. Student Dashboard
     class StudentDashboard extends GradientPanel {
         public StudentDashboard(Student student) {
             setLayout(new GridBagLayout()); JPanel card = createWhiteCard();
@@ -308,9 +296,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 5. CREATE QUIZ PANEL
-    // ==================================================================================
+    // 10. Create Quiz Panel
     class CreateQuizPanel extends GradientPanel {
         List<Question> questions = new ArrayList<>();
         JTextField titleField = new RoundedTextField(20); 
@@ -391,22 +377,17 @@ public class QuizlyGUI extends JFrame {
         private JLabel createLabel(String text) { JLabel l = new JLabel(text); l.setFont(new Font("Segoe UI", Font.BOLD, 12)); l.setForeground(Color.GRAY); return l; }
     }
 
-    // ==================================================================================
-    // 6. VIEW QUIZ PANEL (WITH DARK BACKGROUND & WHITE CARD)
-    // ==================================================================================
+    // 11. View Quiz Panel
     class ViewQuizPanel extends GradientPanel {
         JTable table; DefaultTableModel model; Teacher teacher;
 
         public ViewQuizPanel(Teacher teacher) {
             this.teacher = teacher;
             setLayout(new BorderLayout()); 
-            // 1. Set Padding on MAIN PANEL so the background shows through around the card
             setBorder(new EmptyBorder(30, 40, 30, 40)); 
 
-            // 2. The Card is WHITE
             JPanel contentCard = new JPanel(new BorderLayout()); 
             contentCard.setBackground(Color.WHITE);
-            // No border needed on card itself (or minimal)
 
             JLabel title = new JLabel("Manage My Quizzes", SwingConstants.CENTER);
             title.setFont(FONT_TITLE_BIG); title.setForeground(COL_TEXT_DARK); title.setBorder(new EmptyBorder(20, 0, 20, 0));
@@ -512,9 +493,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 7. DO QUIZ PANEL (DARK GAME MODE - FIXED TIMER LOGIC)
-    // ==================================================================================
+    // 12. Do Quiz Panel (Game)
     class DoQuizPanel extends GradientPanel {
         Student student; Quiz quiz; int idx = 0; int sessionId = 0;
         JLabel qLabel = new JLabel(); JLabel timerLabel = new JLabel("0s"); JLabel progressLabel = new JLabel();
@@ -576,7 +555,6 @@ public class QuizlyGUI extends JFrame {
         }
         
         void loadQ(int i) {
-            // Cek apakah soal sudah habis
             if(i >= quiz.getQuestions().size()) { 
                 finish("Quiz Completed!"); 
                 return; 
@@ -587,7 +565,6 @@ public class QuizlyGUI extends JFrame {
             btnA.setText("<html><center>" + q.getOptionA() + "</center></html>"); btnB.setText("<html><center>" + q.getOptionB() + "</center></html>");
             btnC.setText("<html><center>" + q.getOptionC() + "</center></html>"); btnD.setText("<html><center>" + q.getOptionD() + "</center></html>");
             
-            // Hidupkan tombol kembali
             btnA.setEnabled(true); btnB.setEnabled(true); btnC.setEnabled(true); btnD.setEnabled(true);
             
             startTimer(quiz.getTimeLimit());
@@ -600,7 +577,6 @@ public class QuizlyGUI extends JFrame {
                 while(timeLeft > 0 && isRunning) {
                     try { SwingUtilities.invokeLater(()-> { timerLabel.setText(timeLeft + ""); if(timeLeft <= 5) timerLabel.setForeground(new Color(231, 76, 60)); }); Thread.sleep(1000); timeLeft--; } catch(Exception e){}
                 }
-                // Jika waktu habis, panggil process(null)
                 if(timeLeft<=0 && isRunning) SwingUtilities.invokeLater(()-> process(null));
             }); 
             timerThread.start();
@@ -624,14 +600,12 @@ public class QuizlyGUI extends JFrame {
                 playAudio("wrong.wav", false); 
             }
 
-            // Simpan ke DB
             try {
                 Connection c = DatabaseHelper.getConnection();
                 PreparedStatement s = c.prepareStatement("INSERT INTO user_answer (id_session,id_question,answer,is_correct) VALUES (?,?,?,?)");
                 s.setInt(1,sessionId); s.setInt(2,q.getIdQuestion()); s.setString(3,dbAns); s.setBoolean(4,correct); s.executeUpdate();
             } catch(Exception e){}
             
-            // Next soal dengan delay sedikit
             Timer delay = new Timer(500, e -> { 
                 idx++; 
                 loadQ(idx); 
@@ -676,14 +650,12 @@ public class QuizlyGUI extends JFrame {
                     updateLeaderboard = true;
                 }
 
-                //  High Score
                 if (updateLeaderboard) {
                     PreparedStatement del = c.prepareStatement("DELETE FROM leaderboard WHERE id_quiz=? AND id_student=?");
                     del.setInt(1, quiz.getIdQuiz());
                     del.setInt(2, student.getIdUser());
                     del.executeUpdate();
 
-                    // Masukkan data baru
                     PreparedStatement lb = c.prepareStatement("INSERT INTO leaderboard (id_quiz, id_student, score, `rank`) VALUES (?, ?, ?, 0)");
                     lb.setInt(1, quiz.getIdQuiz());
                     lb.setInt(2, student.getIdUser());
@@ -701,16 +673,12 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 8. VIEW SCORE PANEL (WITH DARK BACKGROUND & WHITE CARD)
-    // ==================================================================================
+    // 13. View Score Panel (History)
     class ViewScorePanel extends GradientPanel {
         public ViewScorePanel(Student student) {
             setLayout(new BorderLayout()); 
-            // 1. Margin Luar (Agar Background Gradient Kelihatan)
             setBorder(new EmptyBorder(30, 40, 30, 40));
 
-            // 2. Kartu Putih
             JPanel contentCard = new JPanel(new BorderLayout()); 
             contentCard.setBackground(Color.WHITE);
 
@@ -740,17 +708,13 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 9. LEADERBOARD PANEL (WITH DARK BACKGROUND & WHITE CARD)
-    // ==================================================================================
+    // 14. Leaderboard Panel
     class LeaderboardPanel extends GradientPanel {
         public LeaderboardPanel(int quizId, String quizTitle) {
             setLayout(new BorderLayout()); 
-            
-            // 1. Margin Luar (Agar Background Gradient Kelihatan)
+
             setBorder(new EmptyBorder(30, 40, 30, 40));
 
-            // 2. Kartu Putih Container
             JPanel contentCard = new JPanel(new BorderLayout());
             contentCard.setBackground(Color.WHITE);
 
@@ -788,9 +752,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    // ==================================================================================
-    // 10. EDIT QUIZ PANEL (MODERN STYLE)
-    // ==================================================================================
+    // 15. Edit Quiz Panel
     class EditQuizPanel extends GradientPanel {
         Teacher teacher; int quizId; 
         JTextField titleField = new RoundedTextField(20); JTextField timeField = new RoundedTextField(5);
@@ -892,7 +854,7 @@ public class QuizlyGUI extends JFrame {
         }
     }
 
-    //QUIZ RESULT PANEL
+    // 16. Quiz Result Panel
     class QuizResultPanel extends GradientPanel {
         public QuizResultPanel(String titleMsg, int score, int correctCount, int totalQuestions, int quizId, String quizTitle) {
             setLayout(new GridBagLayout()); 

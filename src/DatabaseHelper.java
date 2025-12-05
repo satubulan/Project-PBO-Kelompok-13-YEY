@@ -48,7 +48,7 @@ public class DatabaseHelper {
         return connection;
     }
     
-    // Buat semua tabel yang dibutuhkan
+    // Tabel creation
     public static void createTables() {
         try {
             Connection conn = getConnection();

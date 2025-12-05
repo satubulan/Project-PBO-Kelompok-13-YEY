@@ -158,7 +158,7 @@ public class Quiz {
     
     // Method untuk menghitung total score maksimal
     public int getMaxScore() {
-        return questions.size() * 10; // Misalnya setiap soal bernilai 10 poin
+        return questions.size() * 10; 
     }
     
     // Method untuk validasi quiz key
