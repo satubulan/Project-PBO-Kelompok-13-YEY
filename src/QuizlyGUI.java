@@ -11,7 +11,7 @@ import javax.swing.table.*;
 
 public class QuizlyGUI extends JFrame {
     
-    // 1. Warna & Font
+    // 1a. Warna
     final Color COL_GRADIENT_START = Color.decode("#141E30"); 
     final Color COL_GRADIENT_END   = Color.decode("#243B55"); 
     
@@ -23,7 +23,8 @@ public class QuizlyGUI extends JFrame {
     final Color COL_TEXT_DARK      = Color.decode("#2c3e50"); 
     final Color COL_FIELD_BG       = Color.decode("#f1f2f6");
     final Color COL_TABLE_HEAD     = Color.decode("#4e54c8");
-
+    
+    //1b. Font
     final Font FONT_TITLE_BIG = new Font("Segoe UI", Font.BOLD, 28);
     final Font FONT_TITLE     = new Font("Segoe UI", Font.BOLD, 22);
     final Font FONT_NORMAL    = new Font("Segoe UI", Font.PLAIN, 14);
